@@ -1,0 +1,24 @@
+{
+  "private": true,
+  "name": "cmdr-loadfail",
+  "version": "0.0.1",
+  "description": "Discord bot for Tree of Savior related things.",
+  "author": "Seph D. Warwick <kazuhiroichi@gmail.com>",
+  "license": "MIT",
+  "main": "./cmdr-loadfail.js",
+  "dependencies": {
+    "discord.js": "^7.0.0",
+    "humanize-duration": "^3.4.0",
+    "jsonfile": "^2.3.1",
+    "require-directory": "^2.1.1",
+    "xml2js": "^0.4.13"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=5.0.0",
+    "npm": ">=3.3.6"
+  },
+  "scripts": {
+    "start": "node cmdr-loadfail.js --harmony"
+  }
+}
