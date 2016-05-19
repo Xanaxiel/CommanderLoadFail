@@ -3,11 +3,13 @@
 // -- Node Modules -----------------------------------------------------------------------------------------------------
 
 const jsonFile = require("jsonfile");
-const request  = require("superagent");
+const request  = require("request");
 
 // -- Local Variables --------------------------------------------------------------------------------------------------
 
 const Command = require(__dirname + "/../command.js");
+
+jsonFile.spaces = 2;
 
 // -- Github Command ---------------------------------------------------------------------------------------------------
 
@@ -20,27 +22,40 @@ class Github extends Command {
 		this.subscriptions = jsonFile.readFileSync(__dirname + "/../../subscriptions.json");
 		this.queue         = [];
 		setInterval(this.poll.bind(this), 60000); // poll once per minute
+		this.poll(); // create initial queue
 	}
 
 	execute(message) {
-		return;
+		return global.bot.client.sendMessage(message, "Test.");
 	}
 
 	poll() {
 
 		// save newest etags
-		jsonFile.writeFileSync(__dirname + "/../../subscriptions.json", this.subscriptions, { "spaces" : 2 });
+		jsonFile.writeFileSync(__dirname + "/../../subscriptions.json", this.subscriptions);
 
 		// send any messages in the queue
 		if (this.queue.length) this.sendQueue();
 
 		// check for repo changes and add them to the next queue
 		for (let subscription of this.subscriptions) {
-			request.get(`https://api.github.com/repos/${subscription.repo}/events`)
-			.set("If-None-Match", subscription.etag)
-			.end((error, response) => {
-				if (error) this.pollFail(error);
-				else this.pollSuccess(subscription, response);
+			request({
+				"method" : "GET",
+				"url" : `https://api.github.com/repos/${subscription.repo}/events`,
+				"json" : true,
+				"headers" : {
+					"Accept" : "application/vnd.github.v3+json",
+					"If-None-Match" : subscription.etag,
+					"User-Agent" : "Cmdr. LoadFail"
+				}
+			}, (error, response, body) => {
+				if (error) console.log("[Github]", error);
+				else if (response.statusCode === 304) return; // github responded with no changes
+				else if (body) { // request() response contains some json... probably has changes
+					if (response.headers.etag) subscription.etag = response.headers.etag;
+					else console.log(`[Github] No ETag header found for "${subscription.repo}"!`);
+					this.createQueue(subscription, body);
+				}
 			});
 		}
 
@@ -54,38 +69,21 @@ class Github extends Command {
 		}
 	}
 
-	createMessage(event) {
-		switch (event.type) {
-			case "PushEvent":
-				return templates.push(event);
-				break;
-			case "PullRequestEvent":
-				if (event.payload.action === "opened") return templates.pullRequest(event);
-				break;
-			/*case "IssuesEvent":
-				if (event.payload.action === "opened") return templates.issue(event);
-				break;*/
-		}
-		return false;
-	}
-
-	pollFail(error) {
-		if (error.status === 304) return; // no new events
-		else console.log("[Github]", error); // actual error
-	}
-
-	pollSuccess(subscription, response) {
-		if (!response.header.etag) return console.log(`[Github] No ETag header found for "${subscription.repo}"!`);
-		for (let event of response.body) {
-			let content = this.createMessage(event);
-			if (content) {
+	createQueue(subscription, events) {
+		for (let event of events) {
+			if (event.type === "PullRequestEvent" && event.payload.action === "opened") {
 				this.queue.push({
 					"channel" : subscription.channel,
-					"content" : content
+					"content" : templates.pullRequest(event)
+				});
+			}
+			else if (event.type === "PushEvent") {
+				this.queue.push({
+					"channel" : subscription.channel,
+					"content" : templates.push(event)
 				});
 			}
 		}
-		subscription.etag = response.header.etag;
 	}
 
 }
@@ -98,8 +96,10 @@ const templates = {
 		let content = `**[${repo}]** - ${event.payload.size} new commit(s):`;
 		for (let commit of event.payload.commits) {
 			let url = `https://github.com/${repo}/commit/${commit.sha.substring(0, 7)}`;
-			content += `\n*${commit.message}* — ${commit.author.name}`;
 			content += `\n${url}`;
+			content += "\n```";
+			content += `\n${commit.message} — ${commit.author.name}`;
+			content += "\n```";
 		}
 		return content;
 	},
@@ -112,8 +112,10 @@ const templates = {
 		let deletions = event.payload.pull_request.deletions;
 		let url = `https://github.com/${repo}/pull/${event.payload.number}`;
 		let content = `**[${repo}]** New pull request from ${user}:`;
-		content += `\n${size} commits • ${changed} changed files • ${additions} additions • ${deletions} deletions`;
 		content += `\n${url}`;
+		content += "\n```";
+		content += `\n${size} commits • ${changed} changed files • ${additions} additions • ${deletions} deletions`;
+		content += "\n```";
 		return content;
 	}
 	/*issue : function(event) {
