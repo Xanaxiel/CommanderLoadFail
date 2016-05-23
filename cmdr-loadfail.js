@@ -30,7 +30,7 @@ client.on("message", message => {
 
 		let cmd = message.content.substr(config.commandPrefix.length).split(" ")[0].toLowerCase();
 
-		if (message.author.equals(message.channel.server.owner)) {
+		if (!message.channel.isPrivate && message.author.equals(message.channel.server.owner)) {
 			for (let i in admin) {
 				let command = admin[i];
 				if (command.name.toLowerCase() === cmd) return command.execute(message);
