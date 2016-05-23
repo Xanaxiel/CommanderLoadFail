@@ -19,7 +19,7 @@ class Help extends Command {
 
         for (let i in global.bot.commands) {
 
-            let cmd = commands[i];
+            let cmd = global.bot.commands[i];
 
             if (cmd.name.toLowerCase() === command) return cmd;
             if (cmd.aliases.toString().toLowerCase().indexOf(command) !== -1) return cmd;
@@ -41,7 +41,7 @@ class Help extends Command {
 
             params.forEach(param => {
 
-                let command = this.getCommand(param.toLowerCase());
+                let command = this.findCommand(param.toLowerCase());
 
                 if (!command) notfound = true;
                 else {
@@ -78,7 +78,7 @@ class Help extends Command {
                 "```",
                 Object.keys(global.bot.commands).join(", "),
                 "```",
-                "Type **" + global.bot.config.commandPrefix + "help command** for more detailed information."
+                "Type `" + global.bot.config.commandPrefix + "help command` for more detailed information."
             ]);
 
         }
