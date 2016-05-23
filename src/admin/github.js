@@ -123,7 +123,7 @@ const templates = {
 		let repo = event.repo.name;
 		let user = event.payload.issue.user.login;
 		let url = `https://github.com/${repo}/issues/${event.payload.issue.number}`;
-		let content = `**[${repo}]** New issue opened by ${user}:`;
+		let content = `**[${repo}]** — New issue opened by ${user}:`;
 		content += `\n${url}`;
 		return content;
 	},
