@@ -78,7 +78,25 @@ class Github extends Command {
 					"content" : templates.pullRequest(event)
 				});
 			}
-			else if (event.type === "PushEvent") {
+			else if (event.type === "IssuesEvent" && event.payload.action === "opened") {
+				this.queue.push({
+					"channel" : subscription.channel,
+					"content" : templates.issue(event)
+				});
+			}
+			else if (event.type === "ReleaseEvent" && event.payload.action === "published") {
+				this.queue.push({
+					"channel" : subscription.channel,
+					"content" : templates.release(event)
+				});
+			}
+			else if (event.type === "PushEvent" && event.payload.size > 1) {
+				this.queue.push({
+					"channel" : subscription.channel,
+					"content" : templates.pushMulti(event)
+				});
+			}
+			else if (event.type === "PushEvent" && event.payload.size === 1) {
 				this.queue.push({
 					"channel" : subscription.channel,
 					"content" : templates.push(event)
@@ -93,41 +111,48 @@ class Github extends Command {
 // -- Event Templates --------------------------------------------------------------------------------------------------
 
 const templates = {
-	push : function(event) {
-		let repo = event.repo.name;
-		let content = `**[${repo}]** - ${event.payload.size} new commit(s):`;
-		for (let commit of event.payload.commits) {
-			let url = `https://github.com/${repo}/commit/${commit.sha.substring(0, 7)}`;
-			content += `\n${url}`;
-			content += "\n```";
-			content += `\n${commit.message} — ${commit.author.name}`;
-			content += "\n```";
-		}
-		return content;
-	},
 	pullRequest : function(event) {
 		let repo = event.repo.name;
 		let user = event.payload.pull_request.user.login;
-		let size = event.payload.pull_request.commits;
-		let changed = event.payload.pull_request.changed_files;
-		let additions = event.payload.pull_request.additions;
-		let deletions = event.payload.pull_request.deletions;
 		let url = `https://github.com/${repo}/pull/${event.payload.number}`;
-		let content = `**[${repo}]** New pull request from ${user}:`;
+		let content = `**[${repo}]** — New pull request from ${user}:`;
 		content += `\n${url}`;
-		content += "\n```";
-		content += `\n${size} commits • ${changed} changed files • ${additions} additions • ${deletions} deletions`;
-		content += "\n```";
 		return content;
-	}
-	/*issue : function(event) {
+	},
+	issue : function(event) {
 		let repo = event.repo.name;
 		let user = event.payload.issue.user.login;
 		let url = `https://github.com/${repo}/issues/${event.payload.issue.number}`;
-		let content = `**[${repo}]** New issue opened by ${user}: *${event.payload.issue.title}*`;
+		let content = `**[${repo}]** New issue opened by ${user}:`;
 		content += `\n${url}`;
 		return content;
-	}*/
+	},
+	release : function(event) {
+		let repo = event.repo.name;
+		let tag = event.payload.release.tag_name;
+		let url = `https://github.com/${repo}/releases/${tag}`;
+		let content = `**[${repo}]** — New release:`;
+		content += `\n${url}`;
+		return content;
+	},
+	pushMulti : function(event) {
+		let repo = event.repo.name;
+		let before = event.payload.before.substring(0, 10);
+		let head = event.payload.head.substring(0, 10);
+		let url = `https://github.com/${repo}/compare/${before}...${head}`;
+		let content = `**[${repo}]** — ${event.payload.size} new commits:`;
+		content += `\n${url}`;
+		return content;
+	},
+	push : function(event) {
+		let repo = event.repo.name;
+		let commit = event.payload.commits[0];
+		let sha = commit.sha.substring(0, 10);
+		let url = `https://github.com/${repo}/commit/${sha}`;
+		let content = `**[${repo}]** — 1 new commit:`;
+		content += `\n${url}`;
+		return content;
+	}
 }
 
 // -- Export Variables -------------------------------------------------------------------------------------------------
