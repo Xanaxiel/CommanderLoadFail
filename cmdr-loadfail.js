@@ -3,16 +3,17 @@
 // -- Node Modules -----------------------------------------------------------------------------------------------------
 
 const Client           = require("discord.js").Client;
+const jsonFile         = require("jsonfile");
 const requireDirectory = require("require-directory");
 
 // -- Local Variables --------------------------------------------------------------------------------------------------
 
-//const version = require(__dirname + "/src/version.js");
-const config  = require(__dirname + "/config.json");
-
 var client   = new Client({ "maxCachedMessages" : 200, "revive" : true });
 var admin    = requireDirectory(module, __dirname + "/src/admin", { visit : cmd => new cmd() });
 var commands = requireDirectory(module, __dirname + "/src/commands", { visit : cmd => new cmd() });
+var config   = require(__dirname + "/config.json");
+
+jsonFile.spaces = 2;
 
 // -- Initialization ---------------------------------------------------------------------------------------------------
 
@@ -48,6 +49,16 @@ client.on("message", message => {
 
 });
 
+// -- Config File Helpers ----------------------------------------------------------------------------------------------
+
+function loadConfigFile() {
+	config = jsonFile.readFileSync(__dirname + "/config.json");
+}
+
+function saveConfigFile() {
+	jsonFile.writeFileSync(__dirname + "/config.json", config);
+}
+
 // -- Program Entry Point (Login) --------------------------------------------------------------------------------------
 
 config.token ? client.loginWithToken(config.token) : client.login(config.email, config.password);
@@ -55,9 +66,10 @@ config.token ? client.loginWithToken(config.token) : client.login(config.email, 
 // -- Global Variables -------------------------------------------------------------------------------------------------
 
 global.bot = { // Kids, don't ever do this... It's usually a bad idea.
-	//version,
-	config,
 	client,
 	admin,
-	commands
+	commands,
+	config,
+	loadConfigFile,
+	saveConfigFile
 }

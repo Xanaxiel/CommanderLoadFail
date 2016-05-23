@@ -2,14 +2,11 @@
 
 // -- Node Modules -----------------------------------------------------------------------------------------------------
 
-const jsonFile = require("jsonfile");
 const request  = require("request");
 
 // -- Local Variables --------------------------------------------------------------------------------------------------
 
 const Command = require(__dirname + "/../command.js");
-
-jsonFile.spaces = 2;
 
 // -- Github Command ---------------------------------------------------------------------------------------------------
 
@@ -19,10 +16,8 @@ class Github extends Command {
 		super("Github");
 		this.description   = "Add/Remove repos in the Github updates feed.";
 		this.usage         = "<add/remove> <channel> <link>";
-		this.subscriptions = jsonFile.readFileSync(__dirname + "/../../subscriptions.json");
 		this.queue         = [];
 		setInterval(this.poll.bind(this), 60000); // poll once per minute
-		this.poll(); // create initial queue
 	}
 
 	execute(message) {
@@ -32,13 +27,13 @@ class Github extends Command {
 	poll() {
 
 		// save newest etags & ids
-		jsonFile.writeFileSync(__dirname + "/../../subscriptions.json", this.subscriptions);
+		global.bot.saveConfigFile();
 
 		// send any messages in the queue
 		if (this.queue.length) this.sendQueue();
 
 		// check for repo changes and add them to the next queue
-		for (let subscription of this.subscriptions) {
+		for (let subscription of global.bot.config.githubSubscriptions) {
 			request({
 				"method" : "GET",
 				"url" : `https://api.github.com/repos/${subscription.repo}/events`,
@@ -65,7 +60,7 @@ class Github extends Command {
 		console.log(`[Github] Sending ${this.queue.length} new messages.`);
 		while (this.queue.length) {
 			let message = this.queue.shift();
-			global.bot.client.sendMessage(message.channel, message.content);
+			global.bot.client.sendMessage(global.bot.config.updateChannel, message);
 		}
 	}
 
@@ -73,34 +68,19 @@ class Github extends Command {
 		for (let event of events) {
 			if (event.id === subscription.latest) break; // only queue new changes
 			if (event.type === "PullRequestEvent" && event.payload.action === "opened") {
-				this.queue.push({
-					"channel" : subscription.channel,
-					"content" : templates.pullRequest(event)
-				});
+				this.queue.push(templates.pullRequest(event));
 			}
 			else if (event.type === "IssuesEvent" && event.payload.action === "opened") {
-				this.queue.push({
-					"channel" : subscription.channel,
-					"content" : templates.issue(event)
-				});
+				this.queue.push(templates.issue(event));
 			}
 			else if (event.type === "ReleaseEvent" && event.payload.action === "published") {
-				this.queue.push({
-					"channel" : subscription.channel,
-					"content" : templates.release(event)
-				});
+				this.queue.push(templates.release(event));
 			}
 			else if (event.type === "PushEvent" && event.payload.size > 1) {
-				this.queue.push({
-					"channel" : subscription.channel,
-					"content" : templates.pushMulti(event)
-				});
+				this.queue.push(templates.pushMulti(event));
 			}
 			else if (event.type === "PushEvent" && event.payload.size === 1) {
-				this.queue.push({
-					"channel" : subscription.channel,
-					"content" : templates.push(event)
-				});
+				this.queue.push(templates.push(event));
 			}
 		}
 		subscription.latest = events[0].id; // store the latest id
