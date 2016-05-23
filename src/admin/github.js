@@ -31,7 +31,7 @@ class Github extends Command {
 
 	poll() {
 
-		// save newest etags
+		// save newest etags & ids
 		jsonFile.writeFileSync(__dirname + "/../../subscriptions.json", this.subscriptions);
 
 		// send any messages in the queue
@@ -71,6 +71,7 @@ class Github extends Command {
 
 	createQueue(subscription, events) {
 		for (let event of events) {
+			if (event.id === subscription.latest) break; // only queue new changes
 			if (event.type === "PullRequestEvent" && event.payload.action === "opened") {
 				this.queue.push({
 					"channel" : subscription.channel,
@@ -84,6 +85,7 @@ class Github extends Command {
 				});
 			}
 		}
+		subscription.latest = events[0].id; // store the latest id
 	}
 
 }
