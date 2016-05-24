@@ -14,7 +14,7 @@ class Item extends Command {
 
     constructor() {
         super("Item");
-        this.aliases     = ["Iten", "LookupItem"];
+        this.aliases     = ["Items", "Iten", "LookupItem"];
         this.description = "Lookup an item on tosdb.org";
         this.usage       = "<item name>";
     }

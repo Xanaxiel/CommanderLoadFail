@@ -14,7 +14,7 @@ class Monster extends Command {
 
     constructor() {
         super("Monster");
-        this.aliases     = ["LookupMonster"];
+        this.aliases     = ["Monsters", "LookupMonster"];
         this.description = "Lookup a monster on tosdb.org";
         this.usage       = "<monster name>";
     }
