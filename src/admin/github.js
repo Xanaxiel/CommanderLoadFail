@@ -14,15 +14,15 @@ class Github extends Command {
 
 	constructor() {
 		super("Github");
-		this.description   = "Add/Remove repos in the Github updates feed.";
-		this.usage         = "<add/remove> <repo link>";
-		this.queue         = [];
+		this.description = "Add/Remove repos in the Github updates feed.";
+		this.usage       = "<add/remove> <repo link>";
+		this.queue       = [];
 		setInterval(this.poll.bind(this), 60000); // poll once per minute
 	}
 
 	execute(message) {
 
-        let params = this.getParams(message);
+        let params   = this.getParams(message);
         let response = "An unknown error occured!";
 
         if (params.length !== 2 || params[0] != "add" && params[0] != "remove") {
@@ -43,7 +43,6 @@ class Github extends Command {
 
 			response = `Successfully added "${link[1]}"`;
 			console.log(`[Github] Added "${link[1]}" to subscriptions.`)
-			global.bot.saveConfigFile();
 
 		}
 
@@ -57,7 +56,6 @@ class Github extends Command {
 
 			response = `Successfully removed "${link[1]}"`;
 			console.log(`[Github] Removed "${link[1]}" from subscriptions.`)
-			global.bot.saveConfigFile();
 
 		}
 
@@ -73,6 +71,9 @@ class Github extends Command {
 
 		// send any messages in the queue
 		if (this.queue.length) this.sendQueue();
+
+		// check to make sure we have at least one subscription
+		if (!global.bot.config.githubSubscriptions) return;
 
 		// check for repo changes and add them to the next queue
 		for (let subscription of global.bot.config.githubSubscriptions) {
