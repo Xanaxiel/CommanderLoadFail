@@ -30,6 +30,7 @@ client.on("message", message => {
 	if (message.content.indexOf(config.commandPrefix) === 0) {
 
 		let cmd = message.content.substr(config.commandPrefix.length).split(" ")[0].toLowerCase();
+		if (!cmd) return; // null command bugfix
 
 		if (!message.channel.isPrivate && message.author.equals(message.channel.server.owner)) {
 			for (let i in admin) {
