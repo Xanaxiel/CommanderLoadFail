@@ -15,13 +15,55 @@ class Github extends Command {
 	constructor() {
 		super("Github");
 		this.description   = "Add/Remove repos in the Github updates feed.";
-		this.usage         = "<add/remove> <channel> <link>";
+		this.usage         = "<add/remove> <repo link>";
 		this.queue         = [];
 		setInterval(this.poll.bind(this), 60000); // poll once per minute
 	}
 
 	execute(message) {
-		return global.bot.client.sendMessage(message, "Test.");
+
+        let params = this.getParams(message);
+        let response = "An unknown error occured!";
+
+        if (params.length !== 2 || params[0] != "add" && params[0] != "remove") {
+        	return global.bot.client.sendMessage(message, "Missing parameters.");
+        }
+
+        let githubRegEx = /^http(?:s?):\/\/github\.com\/([a-zA-Z0-9-]+\/[a-zA-Z0-9-]+)?$/g;
+        let link = githubRegEx.exec(params[1]);
+        if (!link[1]) return global.bot.client.sendMessage(message, "Invalid link.");
+
+        if (params[0] === "add") {
+
+			global.bot.config.githubSubscriptions.push({
+				"repo" : link[1],
+				"etag" : "",
+				"latest" : ""
+			});
+
+			response = `Successfully added "${link[1]}"`;
+			console.log(`[Github] Added "${link[1]}" to subscriptions.`)
+			global.bot.saveConfigFile();
+
+		}
+
+		else if (params[0] === "remove") {
+
+			for (let i = 0; i < global.bot.config.githubSubscriptions.length; ++i) {
+				if (global.bot.config.githubSubscriptions[i].repo === link[1]) {
+					global.bot.config.githubSubscriptions.splice(i, 1);
+				}
+			}
+
+			response = `Successfully removed "${link[1]}"`;
+			console.log(`[Github] Removed "${link[1]}" from subscriptions.`)
+			global.bot.saveConfigFile();
+
+		}
+
+		global.bot.client.sendMessage(message, response);
+		return this.poll();
+
 	}
 
 	poll() {
