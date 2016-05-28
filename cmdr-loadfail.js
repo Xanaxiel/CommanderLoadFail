@@ -8,7 +8,7 @@ const requireDirectory = require("require-directory");
 
 // -- Local Variables --------------------------------------------------------------------------------------------------
 
-var client   = new Client({ "maxCachedMessages" : 200, "revive" : true });
+var client   = new Client({ "maxCachedMessages" : 200, "autoReconnect" : true });
 var admin    = requireDirectory(module, __dirname + "/src/admin", { visit : cmd => new cmd() });
 var commands = requireDirectory(module, __dirname + "/src/commands", { visit : cmd => new cmd() });
 var config   = require(__dirname + "/config.json");
