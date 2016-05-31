@@ -87,11 +87,11 @@ class Github extends Command {
 					"User-Agent" : "Cmdr. LoadFail"
 				}
 			}, (error, response, body) => {
-				if (error) console.log("[Github]", error);
+				if (error) return console.log("[Github]", error);
 				else if (response.statusCode === 304) return; // github responded with no changes
 				else if (body) { // request() response contains some json... probably has changes
 					if (response.headers.etag) subscription.etag = response.headers.etag;
-					else console.log(`[Github] No ETag header found for "${subscription.repo}"!`);
+					else return console.log(`[Github] No ETag header found for "${subscription.repo}"!`);
 					this.createQueue(subscription, body);
 				}
 			});

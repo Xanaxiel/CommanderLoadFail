@@ -52,7 +52,7 @@ class News extends Command {
 			"url" : "https://forum.treeofsavior.com/c/news.json",
 			"json" : true
 		}, (error, response, body) => {
-			if (error) console.log("[News]", error);
+			if (error) return console.log("[News]", error);
 			else if (body) {
 				let feed = body.topic_list.topics;
 				feed.sort((a,b) => { return b.id - a.id });
