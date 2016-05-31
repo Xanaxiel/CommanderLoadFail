@@ -102,7 +102,7 @@ class Github extends Command {
 	sendQueue() {
 		console.log(`[Github] Sending ${this.queue.length} new messages.`);
 		while (this.queue.length) {
-			let message = this.queue.shift();
+			let message = this.queue.pop();
 			global.bot.client.sendMessage(global.bot.config.updateChannel, message);
 		}
 	}
